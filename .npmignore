@@ -12,6 +12,11 @@ node_modules/
 coverage/
 
 # Generated
-dist/
 .scannerwork/
 *.log
+
+# CircleCI
+.circleci/
+
+# GitHub
+.github/

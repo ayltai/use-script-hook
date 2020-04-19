@@ -1,0 +1,78 @@
+version: 2
+
+references:
+
+  ## Cache
+
+  cache_key: &cache_key
+    key: cache-{{ checksum "package.json" }}
+  restore_cache: &restore_cache
+    restore_cache:
+      <<: *cache_key
+  save_cache: &save_cache
+    save_cache:
+      <<: *cache_key
+      paths:
+        - ./node_modules
+
+  ## Docker image configuration
+
+  config: &config
+    working_directory: ~/workspace
+    docker:
+      - image: circleci/node:13
+    environment:
+      TERM: dumb
+
+jobs:
+
+  dependencies:
+    <<: *config
+    steps:
+      - checkout
+      - *restore_cache
+      - run:
+          name: Install dependencies
+          command: npm i -D
+      - *save_cache
+
+  check:
+    <<: *config
+    steps:
+      - checkout
+      - *restore_cache
+      - run:
+          name: Run linters
+          command: npm run check
+
+  publish:
+    <<: *config
+    steps:
+      - checkout
+      - *restore_cache
+      - run:
+          name: Publish to npm
+          command: npm publish --access public
+      - *save_cache
+
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - dependencies
+      - check:
+          requires:
+            - dependencies
+      - approval:
+          type: approval
+          requires:
+            - check
+      - publish:
+          requires:
+            - dependencies
+            - check
+            - approval
+          filters:
+            branches:
+              only:
+                - master

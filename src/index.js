@@ -1,6 +1,39 @@
-import React from 'react'
-import styles from './styles.module.css'
+import { useEffect, useState, } from 'react';
 
-export const ExampleComponent = ({ text }) => {
-  return <div className={styles.test}>Example Component: {text}</div>
-}
+const cachedScripts = [];
+
+export const useScript = (src, onLoad) => {
+    const [ isLoaded, setIsLoaded, ] = useState(false);
+    const [ hasError, setHasError, ] = useState(false);
+
+    const handleLoaded = () => {
+        setIsLoaded(true);
+
+        if (onLoad) onLoad();
+    };
+
+    const handleError = () => setHasError(true);
+
+    useEffect(() => {
+        if (cachedScripts.includes(src)) {
+            handleLoaded();
+        } else {
+            cachedScripts.push(src);
+
+            const script = document.createElement('script');
+            script.src = src;
+
+            script.addEventListener('load', handleLoaded);
+            script.addEventListener('error', handleError);
+
+            document.head.append(script);
+
+            return () => {
+                script.removeEventListener('load', handleLoaded);
+                script.removeEventListener('error', handleError);
+            };
+        }
+    }, [src,]);
+
+    return [ isLoaded, hasError, ];
+};
